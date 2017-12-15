@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# IMPORTANT NOTE: command-runner.sh must be in your path!
+# Without arguments, attempts to run tests for all .ind files in the current or sub-directories.
+# You can alternatively pass a directory; the script will search for .ind files in that dir
+# and try to run the tests for them.
+# Script tries to capture test output to a temp file and grep for errors.  If there are errors,
+# script will try to notify user and save the test output to ~/tmp/.
+
 ind_files_dir=$1
 temp_file="~temptestoutput"
 
@@ -29,6 +36,3 @@ fi
 
 echo
 echo
-
-
-
