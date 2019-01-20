@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Run from test directory where the all of the test case directories for a
+# script are located. This just uses existing input_0_0 files and tries to update
+# the output.json for every existing test case.
 script="$(pwd | sed -r 's/\/parsers\/test/\/parsers\/src/')"
 script="${script}.ind"
 
