@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+script="$(pwd | sed -r 's/\/parsers\/test/\/parsers\/src/')"
+script="${script}.ind"
+
+for test_name in */ ; do
+    input_file="${PWD}/${test_name}input_0_0"
+    test_name="${test_name%/}"
+    echo "script: ${script}"
+    echo "test name: ${test_name}"
+    echo "input file: ${input_file}"
+    command-runner test create "$script" "$test_name" "$input_file"
+done

@@ -10,13 +10,13 @@
 ind_files_dir=$1
 temp_file="~temptestoutput"
 
-for f in $(find $ind_files_dir -name '*.ind'); do 
-    command-runner.sh test run $f 2>&1 | tee -a $temp_file
+for f in $(find $ind_files_dir -name '*.ind'); do
+    command-runner test run $f 2>&1 | tee -a $temp_file
 done
 
 echo
 echo
-echo "*******************************************************" 
+echo "*******************************************************"
 error=$(grep -B 8 -A 5 ERROR $temp_file)
 if [[ -n "$error" ]]; then
     echo "ERROR IN TEST RUN"
