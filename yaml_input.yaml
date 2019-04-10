@@ -1,0 +1,8 @@
+#! META
+name: cpembedded-load-average
+description: check load averages
+type: monitoring
+monitoring_interval: 10 minutes
+requires:
+    os.name: gaia-embedded
+    this_tag_disables_this_script: this_is_intentional
