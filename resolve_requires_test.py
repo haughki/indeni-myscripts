@@ -47,7 +47,7 @@ def test_or_meets_requires():
 
     assert p.meetsRequirements() == True
 
-def test_or_not_meets_requires():
+def test_or_not_meets_requires_explicit():
     p = resolve_requires.ProcessYaml()
     p.requires = {'requires': {
         'vendor': 'checkpoint',
@@ -60,6 +60,20 @@ def test_or_not_meets_requires():
             'os.name': 'secureplatform' }
 
     assert p.meetsRequirements() == False
+
+def test_or_not_meets_requires():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint',
+        'role-management': 'true',
+        'or': [{'os.name': 'gaia'},
+            {'os.name': 'ipso'},
+            {'role-firewall': 'true'}] }}
+    p.tags = { 'vendor': 'checkpoint', 
+            'role-management': 'true'}
+
+    assert p.meetsRequirements() == False
+
 
 def test_neq_meets_requires():
     p = resolve_requires.ProcessYaml()
@@ -130,5 +144,61 @@ def test_and_neq_not_meets_requires_explicit():
     p.tags = {
         'vendor': 'checkpoint', 
         'os.version': 'R80.10' }
+
+    assert p.meetsRequirements() == False
+
+def test_and_or_meets_requires_explicit():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'and': [
+            { 'or': [{'os.name': 'gaia'},
+                    {'os.name': 'secureplatform'}]
+            },
+            { 'or': [{'os.version': 'R80.10'},
+                    {'os.version': 'R80.20'}]}
+        ],
+        'vendor': 'checkpoint'}}
+
+    p.tags = {
+        'vendor': 'checkpoint', 
+        'os.name': 'secureplatform',
+        'os.version': 'R80.10' }
+
+    assert p.meetsRequirements() == True
+
+def test_and_or_meets_only_one_requires():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'and': [
+            { 'or': [{'os.name': 'gaia'},
+                    {'os.name': 'secureplatform'}]
+            },
+            { 'or': [{'os.version': 'R80.10'},
+                    {'os.version': 'R80.20'}]}
+        ],
+        'vendor': 'checkpoint'}}
+
+    p.tags = {
+        'vendor': 'checkpoint', 
+        'os.name': 'secureplatform' }
+
+    assert p.meetsRequirements() == False
+
+def test_and_or_not_meets_one_requires():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'and': [
+            { 'or': [{'os.name': 'gaia'},
+                    {'os.name': 'secureplatform'}]
+            },
+            { 'or': [{'os.version': 'R80.10'},
+                    {'os.version': 'R80.20'}]}
+        ],
+        'vendor': 'checkpoint'}}
+
+    p.tags = {
+        'vendor': 'checkpoint', 
+        'os.name': 'secureplatform',
+        'os.version': 'R77.30' }
 
     assert p.meetsRequirements() == False

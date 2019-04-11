@@ -1,10 +1,17 @@
 requires:
-    vendor: checkpoint
-    os.name: gaia
+    vendor: "checkpoint"
+    role-firewall:
+                neq: "true"
     and:
-        -
-            os.version:
-                neq: "R80.10"
-        -
-            os.version:
-                neq: "R80.20"
+    -
+        or:
+            -
+                os.name: "gaia"
+            -
+                os.name: "secureplatform"
+    -
+        or:
+            -
+                os.version: "R80.10"
+            -
+                os.version: "R80.20"
