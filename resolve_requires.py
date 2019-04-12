@@ -1,4 +1,4 @@
-import pprint
+import pprint, sys, re, os
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -6,17 +6,58 @@ except ImportError:
     from yaml import Loader, Dumper
 
 class ProcessYaml:
-    def __init__(self, input_file=''):
-        if input_file:
-            f = open(input_file, 'r')
-            self.requires = load(f, Loader=Loader)
-            self.requires_str = dump(self.requires, Dumper=Dumper)
-            pp = pprint.PrettyPrinter(width=1)
-            pp.pprint(self.requires)
-            #print(self.requires_str)
-            self.tags = {}
+    def __init__(self, tags_file='', ind_dir=''):
+        self.requires = {}
+        self.requires_str = ""
+        self.tags = {}
+        
+        if ind_dir:
+            for dirpath, dirs, files in os.walk(ind_dir):	
+                for filename in files:
+                    #print(filename)
+                    if filename.endswith('.ind'):
+                        fname = os.path.join(dirpath,filename)
+                        print('-' * 80)
+                        print(fname)
+                        
+                        file_str = ""
+                        with open(fname) as f:
+                            line = f.readline().strip()
+                            #print(line)
+                            while line != "#! META":
+                                line = f.readline().rstrip()
+
+                            #print("here")
+                            while True:
+                                line = f.readline().rstrip()
+                                if not line:  # EOF
+                                    break
+                                if line.startswith('#! '):  # next section -- might not be #! COMMENTS, so we break on anything
+                                    break
+                                line = re.sub(r':\s*true', r': "true"', line)
+                                file_str = file_str + line +'\n'
+
+                        self.requires = load(file_str, Loader=Loader)
+                        self.requires_str = dump(self.requires, Dumper=Dumper)
+
+                        pp = pprint.PrettyPrinter(width=1)
+                        pp.pprint(self.requires)
     
-    
+    def _satisfiesOrClauses(self, or_clauses):
+        if type(or_clauses) is not list:
+            raise RuntimeError("OR clause value type should always be list, but is: " + str(type(or_clauses)))
+        satisfies_or_clauses = False
+        for or_clause in or_clauses:
+            or_option = next(iter(or_clause))  # get the first (and should be only) key in the dict
+            if or_option in self.tags:
+                if or_clause[or_option] == self.tags[or_option]:
+                    satisfies_or_clauses = True
+                    break
+        if satisfies_or_clauses == False:
+            return satisfies_or_clauses
+        else:
+            return True
+
 
     def meetsRequirements(self):
         print(self.requires)
@@ -24,18 +65,8 @@ class ProcessYaml:
         required = self.requires['requires']
         for req in required:
             if req == 'or':
-                or_clauses = required[req]
-                satisfies_or_clauses = False
-                for or_clause in or_clauses:
-                    if type(or_clause) is not dict:
-                        raise RuntimeError("OR clause type should always be dict, but is: " + str(type(or_clause)))
-                    or_option = next(iter(or_clause))  # get the first (and should be only) key in the dict
-                    if or_option in self.tags:
-                        if or_clause[or_option] == self.tags[or_option]:
-                            satisfies_or_clauses = True
-                            break
-                if satisfies_or_clauses == False:
-                    return satisfies_or_clauses
+                if not self._satisfiesOrClauses(required[req]):
+                    return False
 
             elif req == 'and':
                 and_clauses = required[req]
@@ -46,18 +77,8 @@ class ProcessYaml:
                     clause_val = and_clause[clause_key]
 
                     if clause_key == 'or':
-                        if type(clause_val) is not list:
-                            raise RuntimeError("OR clause value type should always be list, but is: " + str(type(clause_val)))
-                        satisfies_or_clauses = False
-                        for or_clause in clause_val:
-                            or_option = next(iter(or_clause))  # get the first (and should be only) key in the dict
-                            if or_option in self.tags:
-                                if or_clause[or_option] == self.tags[or_option]:
-                                    satisfies_or_clauses = True
-                                    break
-                        if satisfies_or_clauses == False:
-                            return satisfies_or_clauses
-
+                        if not self._satisfiesOrClauses(clause_val):
+                            return False
                     else:
                         if type(clause_val) is not dict:
                             raise RuntimeError("AND clause value type should always be dict, but is: " + str(type(clause_val)))
@@ -102,5 +123,10 @@ class ProcessYaml:
 
 
 if __name__ == '__main__':
-    processor = ProcessYaml('yaml_input.yaml')
+    ind_dir = ""
+    if len(sys.argv) < 2:
+        print("Need input file as first param.")
+    else:
+        ind_dir = sys.argv[1]
+        processor = ProcessYaml(ind_dir=ind_dir)
 
