@@ -1,4 +1,4 @@
-import pprint, sys, re, os
+import pprint, sys, re, os, warnings
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -7,14 +7,22 @@ except ImportError:
 
 class ProcessYaml:
     def __init__(self, tags_file='', ind_dir=''):
-        self.requires = {}
-        self.requires_str = ""
-        self.tags = {}
+        self.requires = None
+        self.tags = None
         
-        if ind_dir:
-            for dirpath, dirs, files in os.walk(ind_dir):	
+        if ind_dir and tags_file:
+                
+            pp = pprint.PrettyPrinter(width=1)
+            with open(tags_file) as tags_f:
+                self.tags = eval(tags_f.read())
+                pp.pprint(self.tags)
+                print()
+                if not self.tags:
+                    raise RuntimeError("Passed tags file: " + tags_file + " has no data.")
+            
+
+            for dirpath, dirs, files in os.walk(ind_dir):
                 for filename in files:
-                    #print(filename)
                     if filename.endswith('.ind'):
                         fname = os.path.join(dirpath,filename)
                         print('-' * 80)
@@ -22,26 +30,37 @@ class ProcessYaml:
                         
                         file_str = ""
                         with open(fname) as f:
+                            # We only want to read the META section of the file. The META section is delimited by a 
+                            # some following section which starts with '#! " -- it could really be anything. So, instead 
+                            # of doing a simple file read, we have to jump through some hoops.
                             line = f.readline().strip()
-                            #print(line)
                             while line != "#! META":
                                 line = f.readline().rstrip()
 
-                            #print("here")
                             while True:
                                 line = f.readline().rstrip()
                                 if not line:  # EOF
                                     break
-                                if line.startswith('#! '):  # next section -- might not be #! COMMENTS, so we break on anything
+                                if re.match(r'^\s*#! ', line):  # next section -- might not be #! COMMENTS, so we break on anything
                                     break
+                                # If true or false don't have quotes, the YAML parser converts them to Python True and False.
+                                # Not what we want.
                                 line = re.sub(r':\s*true', r': "true"', line)
+                                line = re.sub(r':\s*false', r': "false"', line)
                                 file_str = file_str + line +'\n'
 
                         self.requires = load(file_str, Loader=Loader)
-                        self.requires_str = dump(self.requires, Dumper=Dumper)
-
-                        pp = pprint.PrettyPrinter(width=1)
                         pp.pprint(self.requires)
+                        #self.requires_str = dump(meta_dict, Dumper=Dumper)
+                        if 'requires' in self.requires:
+                             if self.meetsRequirements():
+                                 print("*" * 20)
+                                 print(fname)
+                        else:
+                            warnings.warn('No requires section in this .ind script: ' + fname)
+
+                        
+                        
     
     def _satisfiesOrClauses(self, or_clauses):
         if type(or_clauses) is not list:
@@ -60,8 +79,8 @@ class ProcessYaml:
 
 
     def meetsRequirements(self):
-        print(self.requires)
-        print(self.tags)
+        #print(self.requires)
+        #print(self.tags)
         required = self.requires['requires']
         for req in required:
             if req == 'or':
@@ -124,9 +143,11 @@ class ProcessYaml:
 
 if __name__ == '__main__':
     ind_dir = ""
-    if len(sys.argv) < 2:
-        print("Need input file as first param.")
+    if len(sys.argv) < 3:
+        print("\nUsage:\n\n" + os.path.basename(__file__) + " <required_tags_file> <ind_scripts_dir>")
     else:
-        ind_dir = sys.argv[1]
-        processor = ProcessYaml(ind_dir=ind_dir)
+        tags_file = sys.argv[1]
+        ind_dir = sys.argv[2]
+        print("\nProcessing: " + tags_file + " against " + ind_dir)
+        processor = ProcessYaml(tags_file, ind_dir)
 
