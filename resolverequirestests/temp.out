@@ -1,0 +1,45 @@
+{
+    "clusterxl": "true",
+    "high-availability": "true",
+    "linux-based": "true",
+    "os.name": "gaia",
+    "os.version": "R80.20",
+    "role-firewall": "true",
+    "routing-bgp": "true",
+    "ssh": "true",
+    "vendor": "checkpoint",
+    "vsx": "true"
+}
+
+
+./checkpoint-interrogation.ind
+./clusterid-md5sum-local-sicname.ind
+./cphaconf-cluster_id-get.ind
+./cphaprob-list-vsx.ind
+./cphaprob-state-vsx.ind
+./cplic-print-nomds.ind
+./cplic-print-x-n-p-nomds.ind
+./cpprod_util-FwIsFirewallModule.ind
+./cpstat-fw-vsx.ind
+./cpwd-admin-list-m-vsx.ind
+./debug-status.ind
+./detecting-cluster.ind
+./enabled_blades-vsx.ind
+./fw-ctl-affinity-l-m.ind
+./fw-ctl-pstat-vsx.ind
+./fw-tab-stats-vsx.ind
+./fwaccel-stat-vsx.ind
+./fwmultik_stat-m-vsx.ind
+./hw-sw-eos-check.ind
+./ldap-fingerprint-check.ind
+./log-server-connection-vsx.ind
+./log-server-connection.ind
+./os-monitoring.ind
+./policy-fingerprint-vsx.ind
+./subscription-signatures-updates-vsx.ind
+./tcp-test-18264.ind
+./vpn-check-tunnels-vsx.ind
+./vpn-ipafile-check-vsx.ind
+./vsx-stat-interrogation.ind
+./vsx-stat-l.ind
+./vsx-stat-monitoring.ind

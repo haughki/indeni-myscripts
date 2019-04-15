@@ -1,0 +1,81 @@
+#! META
+name: fwmultik_stat_monitoring-vsx
+description: List how many cores are used and connection per core on vsx
+type: monitoring
+monitoring_interval: 5 minutes
+requires:
+    vendor: checkpoint
+    and:
+        -
+            os.name:
+                neq: "secureplatform"
+        -
+            os.name:
+                neq: "gaia"
+    vsx: true
+
+#! COMMENTS
+corexl-cpu-connections:
+    skip-documentation: true
+
+corexl-cores-enabled:
+    skip-documentation: true
+
+#! REMOTE::SSH
+${nice-path} -n 15 fw vsx stat -l | grep VSID | awk '{print $NF}' | while read id; do vsenv $id && ${nice-path} -n 15 fw vsx stat $id && (${nice-path} -n 15 fw ctl multik stat); done
+
+#! PARSER::AWK
+
+function addVsTags(tags) {
+	tags["vs.id"] = vsid
+    tags["vs.name"] = vsname
+    tags["im.identity-tags"] = "vs.id|vs.name"
+}
+
+function dumpCoreData () {
+
+	# Add tags with vsname and vsid
+	addVsTags(t)
+	
+	if ( coreXL == 1 ) {
+		writeComplexMetricStringWithLiveConfig("corexl-cores-enabled", t, icpu, "CoreXL - Cores Enabled")
+	}
+	
+	# clear variables
+	coreXL = ""
+	icpu = ""
+}
+
+BEGIN {
+	#FS="|"
+	icpu=0
+	vsid=""
+	vsname=""
+}
+
+
+# VSID:            0
+/VSID:/ {
+    # Dump data of previous VS if needed
+    if (vsid != "") {
+		dumpCoreData()
+    }
+	vsid = trim($NF)
+}
+
+# Name:            VSX-CXL2-Gear
+/Name:/ {
+	vsname = trim($NF)
+}
+
+
+#  0 | Yes     | 11     |        2722 |    15702
+/Yes/ {
+	addVsTags(coreXLTags)
+
+	connections = trim($7)
+	coreXLTags["cpu-id"] = $1
+	writeDoubleMetric("corexl-cpu-connections", coreXLTags, "gauge", 300, trim(connections))
+	icpu++
+	coreXL=1
+}

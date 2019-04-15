@@ -1,0 +1,248 @@
+#! META
+
+# The blank line above was triggering an EOF exception in my crappy code
+name: chkp-netobj_objects-clusters.C
+description: parse out information about objects from the database regarding clusters
+type: monitoring
+
+# The blank line above would do the same thing
+monitoring_interval: 10 minutes
+requires:
+    vendor: checkpoint
+    high-availability: "true"
+    role-firewall: "true"
+#! COMMENTS
+known-devices:
+    skip-documentation: true
+cluster-preemption-enabled:
+    why: |
+        When preemption is enabled, if the primary firewall fails, then the secondary firewall will take the active role and start to forward traffic. But, when the primary firewall comes back up, it will immediately resume the active role. If this happens repeatedly in a short period of time, it can have a negative effect on performance. Therefore, best practice is not to use preemption.
+    how: |
+        By parsing "cphaprob state", it is possible to retrieve the preempt setting for the device.
+    without-indeni: |
+        An administrator can view the setting in Check Point SmartDashboard.
+    can-with-snmp: false
+    can-with-syslog: false
+    vendor-provided-management: |
+        An administrator can view the setting in Check Point SmartDashboard.
+
+#! REMOTE::SSH
+${nice-path} -n 15 cat $FWDIR/database/netobj_objects.C && grep ":MySICname" $CPDIR/registry/HKLM_registry.data
+
+#! PARSER::AWK
+############
+# Why: List other members of the cluster to be able to easier add it in indeni. Also checks if cluster preempt is enabled.
+# How: Parse the netobj_objects.c file.
+###########
+
+function setNameSetData () {
+    dataName = $1
+    gsub(":","",dataName)
+
+    # Set the data variable
+    data=$2
+    gsub("\\(","",data)
+    gsub("\\)","",data)
+    gsub("\"","",data)
+}
+
+
+BEGIN {
+    sectionDepth=0
+}
+
+######## parsing C files ########
+
+##############################
+# The C files in check point consists of data, stored in sections. Each data has a name and a value. Each section has only a name.
+# The sections are in hierarchies, and thus a section can contain multiple sub-section
+# The section names can be in different formats, so we match against all of them
+# Since it is important to know how far down in the hierarchie we are, we also store that.
+#############################
+
+## Section name sections
+## Here we will set the section name and on which level they are
+
+# Name format 1
+# :ike_p1 (
+/:.+ \($/ {
+
+    sectionName = $1
+
+    # Removing junk
+    gsub(":","",sectionName)
+    sectionName = trim(sectionName)
+
+    # Will count nr of tabs to see on which level we are
+    sectionDepth=gsub(/\t/,"")
+    sectionDepth++
+
+    # Array to look up name
+    sectionArray[sectionDepth] = sectionName
+}
+
+# Name example 2
+# : (MyIntranet
+# : (ReferenceObject
+/: \(.+$/ {
+
+    sectionName = $2
+
+    # Removing junk
+    gsub("\\(","",sectionName)
+    sectionName = trim(sectionName)
+
+    # Will count nr of tabs to see on which level we are
+    sectionDepth=gsub(/\t/,"")
+    sectionDepth++
+
+    # Array to look up name
+    sectionArray[sectionDepth] = sectionName
+}
+
+
+#Name example 3
+# :ike_p1_dh_grp (ReferenceObject
+# Any line with an ":" followed by any characters then a space, followed by a "(" but not ending with a ")"
+/:.+ \(.[^)]*$/ {
+    sectionName = $1
+
+    # Removing junk
+    gsub(":","",sectionName)
+    sectionName = trim(sectionName)
+
+    # Will count nr of tabs to see on which level we are
+    sectionDepth=gsub(/\t/,"")
+    sectionDepth++
+
+    # Array to look up name
+    sectionArray[sectionDepth] = sectionName
+}
+
+#Name example 4
+# (
+/^\($/ {
+    sectionName = ""
+    # Will count nr of tabs to see on which level we are
+    sectionDepth=gsub(/\t/,"")
+    sectionDepth++
+}
+
+# Decrease section depth by 1
+# Match for a tab with a ")" after it and then line end
+#	)
+/\t\)$/ {
+    # Tracks which level we are in the sections.
+    # We encountered a ) and thus we are one level higher
+    sectionDepth--
+}
+
+# Decrease section depth by 1
+# Match for a tab with a ")" after it and then line end
+# )
+/^\)$/ {
+    # Tracks which level we are in the sections.
+    # We encountered a ) and thus we are one level higher
+    sectionDepth--
+}
+
+#:ipaddr (10.11.2.21)
+/:ipaddr/ {
+    # set variables "data" and "dataName"
+    setNameSetData()
+
+    if ( sectionArray[sectionDepth-1] == "interfaces" ||  sectionDepth == 2 ) {
+        # data = ip address, example: 1.1.1.1
+        # [sectionArray[2]] = gateway name, example: lab-CP-GW5-R7730
+
+        # Creating an array where data is: GATEWAY-NAME,IP
+        iips++
+        ips[iips] = sectionArray[2] "," data
+
+        if (sectionDepth == 2) {
+            # If the IP address is found on depth 2, then its the "main IP"
+            # Creating an array with GATEWAY-NAME as index, and the IP as data
+            mainIps[sectionArray[2]] = data
+        }
+    }
+}
+
+
+# :refname ("#_lab-CP-VSXVSLS-1-R7730")
+/refname/ {
+    # set variables "data" and "dataName"
+    setNameSetData()
+
+    # if the refname is in a section called "cluster_members" then this is relevant
+    if (sectionArray[sectionDepth-1] == "cluster_members") {
+        gsub(/#_/,"",data)
+        # Array with GATEWAY-NAME as key, and the cluster hostname as data
+        clusters[data] = sectionArray[2]
+    }
+}
+
+# HA_mode (ActiveUp)
+# HA_mode (HigherUp)
+/:HA_mode/ {
+    # sectionArray[2] = gateway name
+    # set variables "data" and "dataName"
+    setNameSetData()
+
+    # Create array with GATEWAY-NAME as key and "ActiveUp" or "HigherUp" as data
+    HAmode[sectionArray[2]] = data
+}
+
+
+#  :MySICname ("CN=lab-CP-GW2-R7730,O=lab-CP-MGMT-R7730..o2sn6g")
+/MySICname/ {
+    # To determine hostname
+    # extract hostname and remove junk
+    split($2,hostnameArr,",")
+    gsub(/\(|\"|=|CN/,"",hostnameArr[1])
+
+    # Set both local hostname and the name of the cluster the host belongs to
+    localName = hostnameArr[1]
+    localClusterName=clusters[localName]
+}
+
+######## END tasks ########
+END {
+    # Find out the name of the other members of the same cluster as this device
+    # Create an array with clusterName as index, and the cluster member names as values
+    for (member in clusters) {
+        if (clusters[member] in members) {
+            members[clusters[member]] = members[clusters[member]] "," member
+        } else {
+            members[clusters[member]] = member
+        }
+    }
+
+    for (id in members) {
+        if (id == localClusterName) {
+            split(members[id], membersArr, ",")
+            for (id2 in membersArr) {
+                # We dont want to include ourselfs
+                if (membersArr[id2] != localName) {
+                    idevice++
+                    knownDevices[idevice, "name"] = membersArr[id2]
+                    knownDevices[idevice, "ip"] = mainIps[membersArr[id2]]
+                    wroteKnownDevices=1
+                }
+            }
+        }
+    }
+
+
+    if (wroteKnownDevices == 1) {
+        writeComplexMetricObjectArray("known-devices", null, knownDevices)
+    }
+
+    if ( HAmode[localClusterName] == "HigherUp") {
+        preemption_enabled = 1
+    }
+    else {
+        preemption_enabled = 0
+    }
+    writeDoubleMetric("cluster-preemption-enabled", null, "gauge", 300, preemption_enabled)
+
+}

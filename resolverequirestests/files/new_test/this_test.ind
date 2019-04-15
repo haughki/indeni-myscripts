@@ -1,0 +1,164 @@
+#! META
+name: chkp-cphaprob-a-if-vsx
+description: Check how many interfaces are required to be up, and how many actually are.
+type: monitoring
+monitoring_interval: 1 minute
+requires:
+    vendor: "checkpoint"
+    high-availability: "true"
+    vsx: "true"
+    role-firewall: "true"
+    this_tag_disables_this_script: this_is_intentional
+
+#! COMMENTS
+cphaprob-required-interfaces:
+    skip-documentation: true
+
+cphaprob-required-secured-interfaces:
+    skip-documentation: true
+
+cphaprob-up-interfaces:
+    skip-documentation: true
+
+cluster-vip:
+    skip-documentation: true
+
+clusterxl-ccp-mode:
+    skip-documentation: true
+
+cphaprob-up-secured-interfaces:
+    skip-documentation: true
+
+#! REMOTE::SSH
+${nice-path} -n 15 cphaprob state && ${nice-path} -n 15 fw vsx stat -l && ${nice-path} -n 15 cphaprob -a if
+
+#! PARSER::AWK
+
+function dumpFoundInterfaces() {
+	vstags["vs.id"] = vsId
+	vstags["vs.name"] = vsNameArr[vsId]
+
+	# Only write metric if there is something to write. Some VS'es can be virtual switches without interfaces.
+	# Or the HA service could be stopped
+	if (foundSecuredUpInterfaces) {
+		writeDoubleMetric("cphaprob-up-secured-interfaces", vstags, "gauge", "60", foundSecuredUpInterfaces)
+	}
+	
+	if (arraylen(clusterVIP)) {
+		writeComplexMetricObjectArray("cluster-vip", vstags, clusterVIP)
+	}
+
+	if (requiredInterfaces) {
+		writeDoubleMetric("cphaprob-required-interfaces", vstags, "gauge", "60", requiredInterfaces)
+	}
+
+	if (requiredSecuredInterfaces) {
+		writeDoubleMetric("cphaprob-required-secured-interfaces", vstags, "gauge", "60", requiredSecuredInterfaces)
+	}
+
+	# In a per virtual system state cluster, VS0 only requires as many interfaces as VS0 has.
+	# But in a failover VSX cluster VS0 requires as many interfaces as VS0 and all other VSes combined.
+	# So if  the cluster mode is "New High Availability", the metric for VSID 0 needs to be written in the END section.
+	if (foundUpInterfaces) {
+		if (vsId != 0 || clusterMode == "Virtual System Load Sharing") {
+			writeDoubleMetric("cphaprob-up-interfaces", vstags, "gauge", "60", foundUpInterfaces)
+
+		}
+	}
+
+	foundUpInterfaces = ""
+	foundSecuredUpInterfaces = ""
+	requiredInterfaces = ""
+	requiredSecuredInterfaces = ""
+	delete clusterVIP
+	servicesStarted = 1
+}
+
+BEGIN {
+	foundUpInterfaces = ""
+	foundSecuredUpInterfaces = ""
+}
+
+#Cluster Mode:   VSX High Availability (Active Up) with IGMP Membership
+#Cluster Mode:   Virtual System Load Sharing
+#Cluster Mode: New High Availability (Active Up) with IGMP Membership
+/^Cluster Mode: / {
+	split($0, clusterModeSplitArr, ":")
+	clusterMode = clusterModeSplitArr[2]
+
+	# New High Availability (Active Up) with IGMP Membership
+	sub(/\(.*/, "", clusterMode)
+
+	clusterMode = trim(clusterMode)
+}
+
+#VSID:            0
+/^VSID:/ {
+	vsId = $NF
+}
+
+#Name:            VSX-CXL2-Gear
+/^Name:/ {
+	vsName = $NF
+	vsNameArr[vsId] = vsName
+}
+
+#vsid 0:
+/^vsid/ {
+	if (vsId != "") {
+		# Each section of data, from each virtual host starts with a line containing which vsId it is for. If this variable is not set, 
+		# then we have not passed one whole section yet, and we should not write metrics.
+		# the function dumpFoundInterfaces is used to write all the different metrics each time one section for one virtual hosts has been processed.
+		dumpFoundInterfaces()
+	}
+	vsId = $NF
+
+	#0:
+	gsub(/:/, "", vsId)
+}
+
+#Required interfaces: 2
+/^Required interfaces/ {
+	requiredInterfaces = $NF
+}
+
+#Required secured interfaces: 1
+/^Required secured interfaces/ {
+	requiredSecuredInterfaces = $NF
+}
+
+# Match UP non-secured interfaces
+#eth0       UP   non sync(non secured), multicast  (eth0.5    )
+/UP.*non secured/ {
+	foundUpInterfaces++
+	foundUpInterfacesTotal++
+}
+
+#eth2       UP                    sync(secured), multicast
+/UP.*\(secured/ {
+	foundSecuredUpInterfaces++
+	foundUpInterfaces++
+	foundUpInterfacesTotal++
+}
+
+#eth1            1.1.1.1
+/(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/ {
+	iClustVip++
+	clusterVIP[iClustVip, $1] = $2
+}
+
+END {
+	dumpFoundInterfaces()
+	
+	if (clusterMode ~ "High Availability") {
+		# In a per virtual system state cluster, VS0 only requires as many interfaces as VS0 has itself.
+		# But in a failover VSX cluster VS0 requires as many interfaces as VS0 and all other VSes combined.
+		# This the data for VSID 0 needs to be written in the END section.
+		if (foundUpInterfacesTotal) {
+			vsId = "0"
+			vstags["vs.id"] = vsId
+			vstags["vs.name"] = vsNameArr[vsId]
+			writeDoubleMetric("cphaprob-up-interfaces", vstags, "gauge", "60", foundUpInterfacesTotal)
+		}
+	}	
+}

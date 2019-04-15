@@ -204,3 +204,56 @@ def test_and_or_not_meets_one_requires():
     assert p.meetsRequirements() == False
 
 # File Input Tests
+def test_files_basic():
+    p = resolve_requires.ProcessYaml()
+    p.tags_file = r".\resolverequirestests\files\basic\basic_meets_requires.tags"
+    p.ind_dir = r'.\resolverequirestests\files\basic'
+    p._getFilesMatchingRequirements()
+    assert len(p.scripts) == 1
+    assert r".\resolverequirestests\files\basic\basic_meets_requires.ind" == p.scripts[0]
+
+def test_files_one_in_one_out():
+    p = resolve_requires.ProcessYaml()
+    p.tags_file = r".\resolverequirestests\files\one_in_one_out\one_in_one_out.tags"
+    p.ind_dir = r'.\resolverequirestests\files\one_in_one_out'
+    p._getFilesMatchingRequirements()
+    assert len(p.scripts) == 1
+    assert r".\resolverequirestests\files\one_in_one_out\this_one_is_in.ind" == p.scripts[0]
+
+def test_files_no_comments_section():
+    p = resolve_requires.ProcessYaml()
+    test_dir_path = r".\resolverequirestests\files\no_comments_section"
+    p.tags_file = test_dir_path + r"\basic_meets_requires.tags"
+    p.ind_dir = test_dir_path
+    p._getFilesMatchingRequirements()
+    assert len(p.scripts) == 1
+    assert test_dir_path + r"\no_comments_section.ind" == p.scripts[0]
+
+def test_and_or_some_in_some_out():
+    p = resolve_requires.ProcessYaml()
+    test_dir_path = r".\resolverequirestests\files\and_or_some_in_some_out"
+    p.tags_file = test_dir_path + r"\and_or_some_in_some_out.tags"
+    p.ind_dir = test_dir_path
+    p._getFilesMatchingRequirements()
+    assert len(p.scripts) == 2
+    for s in p.scripts:
+        print(s)
+    #assert test_dir_path + r"\no_comments_section.ind" == p.scripts[0]
+
+def test_blank_line_eof_error():
+    p = resolve_requires.ProcessYaml()
+    test_dir_path = r".\resolverequirestests\files\blank_line_eof_error"
+    p.tags_file = test_dir_path + r"\basic_meets_requires.tags"
+    p.ind_dir = test_dir_path
+    p._getFilesMatchingRequirements()
+    assert len(p.scripts) == 1
+    assert test_dir_path + r".\blank_line_eof_error.ind" == p.scripts[0]
+
+def test_notsure():
+    p = resolve_requires.ProcessYaml()
+    test_dir_path = r".\resolverequirestests\files\new_test"
+    p.tags_file = test_dir_path + r"\super_basic.tags"
+    p.ind_dir = test_dir_path
+    p._getFilesMatchingRequirements()
+    assert len(p.scripts) == 1
+    assert test_dir_path + r"\this_test.ind" == p.scripts[0]
