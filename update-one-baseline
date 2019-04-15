@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+# Run from test directory where all of the test case directories for a
+# script are located. This just uses existing input_0_0 files and tries to update
+# the output.json for every existing test case.
+
+test_name=$1
+if [[ -z "${test_name}" ]]; then
+    echo "Error: test_name is empty: you need to pass a test case name."
+    exit 1
+fi
+
+test_name="${test_name%/}"   # strip trailing slash if it exists
+
+script="$(pwd | sed -r 's/\/parsers\/test/\/parsers\/src/')"
+script="${script}.ind"
+
+input_file="${PWD}/${test_name}/input_0_0"
+echo "script: ${script}"
+echo "test name: ${test_name}"
+echo "input file: ${input_file}"
+command-runner test create "$script" "$test_name" "$input_file"
