@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 
-# Run from test directory where all of the test case directories for a
-# script are located. This just uses existing input_0_0 files and tries to update
-# the output.json for every existing test case.
+# Run from test directory where all of the test cases for a script are located. 
+# Specify the individual test case name in the command. This just uses existing 
+# input_0_0 files and tries to update the output.json for every existing test case.
+
+# Usage:
+# update-one-baseline <individual-test-case-name>
+# /indeni-knowledge/parsers/test/crossvendor/unix/top-b $ update-one-baseline with-Tasks/
 
 test_name=$1
 if [[ -z "${test_name}" ]]; then
@@ -13,7 +17,9 @@ fi
 test_name="${test_name%/}"   # strip trailing slash if it exists
 
 script="$(pwd | sed -r 's/\/parsers\/test/\/parsers\/src/')"
-script="${script}.ind"
+script="${script}/$(basename ${script})"
+script="${script}.ind.yaml"
+
 
 input_file="${PWD}/${test_name}/input_0_0"
 echo "script: ${script}"

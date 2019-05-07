@@ -3,8 +3,16 @@
 # Run from test directory where all of the test case directories for a
 # script are located. This just uses existing input_0_0 files and tries to update
 # the output.json for every existing test case.
+
+# Usage:
+# update-all-baselines
+# /indeni-knowledge/parsers/test/crossvendor/unix/top-b $ update-all-baselines
+
+
 script="$(pwd | sed -r 's/\/parsers\/test/\/parsers\/src/')"
-script="${script}.ind"
+script="${script}/$(basename ${script})"
+script="${script}.ind.yaml"
+
 
 for test_name in */ ; do
     input_file="${PWD}/${test_name}input_0_0"
