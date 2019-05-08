@@ -3,3 +3,5 @@
 *.pyc
 /.pytest_cache
 /.vscode
+working.ind.yaml
+working.tags

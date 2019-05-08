@@ -1,12 +1,12 @@
 {
-    "clusterxl": "true",
-    "high-availability": "true",
+    "vendor": "checkpoint",
     "linux-based": "true",
     "os.name": "gaia",
     "os.version": "R80.20",
-    "role-firewall": "true",
-    "routing-bgp": "true",
     "ssh": "true",
-    "vendor": "checkpoint",
-    "vsx": "true"
+    "role-firewall": "true",
+    "vsx": "true",
+    "clusterxl": "true",
+    "high-availability": "true",
+    "routing-bgp": "true"
 }

@@ -40,10 +40,10 @@ class ProcessYaml:
         # Walk the passed directory to search for .ind files to process
         for dirpath, dirs, files in os.walk(str(self.yaml_dir)):
             for filename in files:
-                if filename.endswith('.yaml'):
+                if filename.endswith('.ind.yaml'):
                     fname = Path(dirpath) / filename
-                    #print('-' * 80)
-                    #print(fname)
+                    print('-' * 80)
+                    print(fname)
                     
                     file_str = ""
                     with open(str(fname)) as f:
@@ -63,7 +63,7 @@ class ProcessYaml:
                             if self.meetsRequirements():
                                 self.scripts.append(fname)
                     else:
-                        warnings.warn('No requires section in this .ind script: ' + fname)
+                        warnings.warn('No requires section in this .ind script: ' + str(fname))
         
         self.scripts.sort()
 
@@ -74,24 +74,19 @@ class ProcessYaml:
             #pprint.PrettyPrinter(width=1).pprint(self.tags)
             #print()
             if not self.tags:
-                raise RuntimeError("Passed tags file: " + self.tags_file + " has no data.")
+                raise RuntimeError("Passed tags file: " + str(self.tags_file) + " has no data.")
 
-                        
-    
+
     def _satisfiesOrClauses(self, or_clauses):
         if type(or_clauses) is not list:
             raise RuntimeError("OR clause value type should always be list, but is: " + str(type(or_clauses)))
         satisfies_or_clauses = False
         for or_clause in or_clauses:
             or_option = next(iter(or_clause))  # get the first (and should be only) key in the dict
-            if or_option in self.tags:
-                if or_clause[or_option] == self.tags[or_option]:
-                    satisfies_or_clauses = True
-                    break
-        if satisfies_or_clauses == False:
-            return satisfies_or_clauses
-        else:
-            return True
+            if self._requirementIsMet(or_clause, or_option):
+                satisfies_or_clauses = True
+                break
+        return satisfies_or_clauses
 
 
     def meetsRequirements(self):
@@ -115,46 +110,53 @@ class ProcessYaml:
                         if not self._satisfiesOrClauses(clause_val):
                             return False
                     else:
-                        if type(clause_val) is not dict:
-                            raise RuntimeError("AND clause value type should always be dict, but is: " + str(type(clause_val)))
+                        if not self._requirementIsMet(and_clause, clause_key):
+                            return False
+            else:
+                if not self._requirementIsMet(required, req):
+                    return False
 
-                        clause_sub_key = next(iter(clause_val))
-                        if clause_sub_key == 'neq':
-                            if clause_key in self.tags:
-                                if clause_val['neq'] == self.tags[clause_key]:
-                                    return False  # value of the tag equals the value of neq -- fails requirements
-                        else:
-                            self._raiseNeqError(req)
-
-            elif req in self.tags:
-                req_val = required[req]
-                if type(req_val) is str:
-                    if required[req] != self.tags[req]:
-                        return False
-                elif type(req_val) is dict:  # This would be a 'sub-clause' like 'vsx': {'neq': 'true'}
-                    req_val_key = next(iter(req_val))  # get the first (and should be only) key in the dict
-                    if req_val_key == 'neq':
-                        if req_val['neq'] == self.tags[req]:
-                            return False  # value of the tag equals the value of neq -- fails requirements
-                    else:
-                        self._raiseNeqError(req)
-                else:
-                    raise RuntimeError("Unexpected type for requirement value. Requirement: " + str(req) + ". Type of requirement value: " + str(type(self.requires[req])))
-            else:  # The reqired key is not in the tags
-                req_val = required[req]
-                if type(req_val) is dict:  # This would be a 'sub-clause' like 'vsx': {'neq': 'true'}
-                    req_val_key = next(iter(req_val))  # get the first (and should be only) key in the dict
-                    if req_val_key == 'neq':
-                        return True
-                    else:
-                        self._raiseNeqError(req)
-                return False
         return True
 
 
-    def _raiseNeqError(self, req):
-        raise RuntimeError("Unexpected type for requirement value. Requirement: " + str(req) + ". Type of requirement value: " + str(type(self.requires[req])))
+    def _raiseUnexpectedReqType(self, required, req):
+        raise RuntimeError("Unexpected type for requirement value. Requirement: " + str(req) + ". Type of requirement value: " + str(type(required[req])))
 
+    def _requirementIsMet(self, required, req):
+        if req in self.tags:
+            req_val = required[req]
+            if type(req_val) is str:
+                if required[req] != self.tags[req]:
+                    return False
+            elif type(req_val) is dict:  # This would be a 'sub-clause' like 'vsx': {'neq': 'true'}
+                req_val_key = next(iter(req_val))  # get the first (and should be only) key in the dict
+                if req_val_key == 'neq':
+                    if req_val['neq'] == self.tags[req]:
+                        return False  # value of the tag equals the value of neq -- fails requirements
+                elif req_val_key == 'eq':
+                    if req_val['eq'] != self.tags[req]:
+                        return False  # value of the tag does not equal value of eq -- fails requirements
+                else:
+                    self._raiseUnexpectedReqType(required, req)
+            else:
+                self._raiseUnexpectedReqType(required, req)
+        else:  # The reqired key is not in the tags
+            req_val = required[req]
+            if type(req_val) is dict:  # This would be a 'sub-clause' like 'vsx': {'neq': 'true'}
+                req_val_key = next(iter(req_val))  # get the first (and should be only) key in the dict
+                # Example: vsx is required to not be true. The vsx key doesn't even exist in the tags:
+                # maybe it's just a regular firewall. In any case, if the vsx key doesn't exist,
+                # it definitely can't equal 'true' (or any thing else) so it meets the requirements by default.
+                if req_val_key == 'neq':
+                    return True
+                elif req_val_key == 'eq':  # No tag for this, so implicitly false
+                    return False
+                else:
+                    self._raiseUnexpectedReqType(required, req)
+                    
+                    
+            return False
+        return True # Couldn't say for sure if all the requirements are met -- need to look at the rest of the requirements
 
 
 if __name__ == '__main__':

@@ -81,9 +81,22 @@ def test_neq_meets_requires():
     p.requires = {'requires': {
         'vendor': 'checkpoint',
         'role-firewall': 'true',
-        'vsx': {'neq': 'true'} }}
+        'vsx': {'neq': 'true'} },
+        }
     p.tags = { 'vendor': 'checkpoint', 
             'role-firewall': 'true' }
+
+    assert p.meetsRequirements() == True
+
+def test_neq_not_meets_requires_order_matters():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint',
+        'vsx': {'neq': 'true'},
+        'role-firewall': 'true' }}
+    p.tags = { 'vendor': 'checkpoint', 
+            'role-firewall': 'true',
+            'mds': 'true' }
 
     assert p.meetsRequirements() == True
 
@@ -185,7 +198,7 @@ def test_and_or_meets_only_one_requires():
 
     assert p.meetsRequirements() == False
 
-def test_and_or_not_meets_one_requires():
+def test_and_or_does_not_meet_one_requires():
     p = resolve_requires.ProcessYaml()
     p.requires = {'requires': {
         'and': [
@@ -204,9 +217,74 @@ def test_and_or_not_meets_one_requires():
 
     assert p.meetsRequirements() == False
 
+# This is a convoluted set of requirements: there's no need for the 'and' clause here -- it is implied. But, I found
+# it in a script, so I'm going to test for it.
+def test_and_or_neq_meets_requires():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'and': [
+            {'os.name': 'ipso'},
+            { 'or': [
+                {'vsx': {'neq': 'true'} },
+                {'mds': 'true'}]}
+        ],
+        'vendor': 'checkpoint'}}
 
+    p.tags = {
+        'vendor': 'checkpoint', 
+        'os.name': 'ipso',
+        'os.version': 'R77.30',
+        'vsx': 'true' }
+
+    assert p.meetsRequirements() == False
+
+# This is a convoluted set of requirements: there's no need for the 'and' clause here -- it is implied. But, I found
+# it in a script, so I'm going to test for it.
+def test_and_or_neq_meets_requires_special():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'and': [
+            {'os.name': 'ipso'},
+            { 'or': [
+                {'vsx': {'neq': 'true'} },
+                {'mds': 'true'}]}
+        ],
+        'vendor': 'checkpoint'}}
+
+    p.tags = {
+        'vendor': 'checkpoint', 
+        'os.name': 'ipso',
+        'os.version': 'R77.30',
+        'mds': 'true' }
+
+    assert p.meetsRequirements() == True
+
+# I'm pretty sure this 'eq' switch is unnecessary -- maybe even a bug. But, I found
+# it in a script, so I'm going to test for it.
+def test_eq_meets_requires():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'or': [
+                {'os.version': {'eq': 'R80.10'} },
+                {'os.version': {'eq': 'R80.20'} }
+        ],
+        'vendor': 'checkpoint',
+        'role-firewall': 'true',
+        'os.name': {'neq': 'gaia'} }
+        }
+
+    p.tags = {
+        'vendor': 'checkpoint', 
+        'os.name': 'ipso',
+        'os.version': 'R80.10',
+        'role-firewall': 'true' }
+
+    assert p.meetsRequirements() == True
+
+
+
+# Following tests run against actual .yaml files -- 'full file' tests
 test_files_base = Path("./resolverequirestests/files")
-# File Input Tests
 def test_files_basic():
     p = resolve_requires.ProcessYaml()
     p.tags_file = test_files_base / "basic/basic_meets_requires.tags"
