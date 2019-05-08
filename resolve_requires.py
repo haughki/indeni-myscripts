@@ -13,6 +13,7 @@ python3 resolve_requires.py temp_tags.tags parsers/src/checkpoint/firewall
 
 import pprint, sys, re, os, warnings
 from yaml import load, dump
+from pathlib import Path
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -21,7 +22,7 @@ except ImportError:
 class ProcessYaml:
     def __init__(self, tags_file='', yaml_dir=''):
         self.tags_file = tags_file
-        self.yaml_dir = yaml_dir
+        self.yaml_dir = Path(yaml_dir)
         self.requires = None
         self.tags = None
         self.scripts = []
@@ -38,7 +39,7 @@ class ProcessYaml:
         for dirpath, dirs, files in os.walk(self.yaml_dir):
             for filename in files:
                 if filename.endswith('.yaml'):
-                    fname = os.path.join(dirpath,filename)
+                    fname = Path(dirpath) / filename
                     #print('-' * 80)
                     #print(fname)
                     

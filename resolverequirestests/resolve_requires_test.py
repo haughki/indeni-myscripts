@@ -1,4 +1,5 @@
 import resolve_requires, pytest
+from pathlib import Path
 
 def test_basic_meets_requires():
     p = resolve_requires.ProcessYaml()
@@ -203,45 +204,47 @@ def test_and_or_not_meets_one_requires():
 
     assert p.meetsRequirements() == False
 
+
+test_files_base = Path("./resolverequirestests/files")
 # File Input Tests
 def test_files_basic():
     p = resolve_requires.ProcessYaml()
-    p.tags_file = r".\resolverequirestests\files\basic\basic_meets_requires.tags"
-    p.yaml_dir = r'.\resolverequirestests\files\basic'
+    p.tags_file = test_files_base / "basic/basic_meets_requires.tags"
+    p.yaml_dir = test_files_base / "basic"
     p._getFilesMatchingRequirements()
     assert len(p.scripts) == 1
-    assert r".\resolverequirestests\files\basic\basic_meets_requires.ind.yaml" == p.scripts[0]
+    assert test_files_base / "basic/basic_meets_requires.ind.yaml" == p.scripts[0]
 
 def test_files_one_in_one_out():
     p = resolve_requires.ProcessYaml()
-    p.tags_file = r".\resolverequirestests\files\one_in_one_out\one_in_one_out.tags"
-    p.yaml_dir = r'.\resolverequirestests\files\one_in_one_out'
+    p.tags_file = test_files_base / "one_in_one_out/one_in_one_out.tags"
+    p.yaml_dir = test_files_base / "one_in_one_out"
     p._getFilesMatchingRequirements()
     assert len(p.scripts) == 1
-    assert r".\resolverequirestests\files\one_in_one_out\this_one_is_in.ind.yaml" == p.scripts[0]
+    assert test_files_base / "one_in_one_out/this_one_is_in.ind.yaml" == p.scripts[0]
 
 def test_files_no_comments_section():
     p = resolve_requires.ProcessYaml()
-    test_dir_path = r".\resolverequirestests\files\no_comments_section"
-    p.tags_file = test_dir_path + r"\basic_meets_requires.tags"
-    p.yaml_dir = test_dir_path
+    test_files_path = test_files_base / "no_comments_section"
+    p.tags_file = test_files_path / "basic_meets_requires.tags"
+    p.yaml_dir = test_files_path
     p._getFilesMatchingRequirements()
     assert len(p.scripts) == 1
-    assert test_dir_path + r"\no_comments_section.ind.yaml" == p.scripts[0]
+    assert test_files_path / "no_comments_section.ind.yaml" == p.scripts[0]
 
 def test_and_or_some_in_some_out():
     p = resolve_requires.ProcessYaml()
-    test_dir_path = r".\resolverequirestests\files\and_or_some_in_some_out"
-    p.tags_file = test_dir_path + r"\and_or_some_in_some_out.tags"
-    p.yaml_dir = test_dir_path
+    test_files_path = test_files_base / "and_or_some_in_some_out"
+    p.tags_file = test_files_path / "and_or_some_in_some_out.tags"
+    p.yaml_dir = test_files_path
     p._getFilesMatchingRequirements()
     assert len(p.scripts) == 2
     found_expected_2 = False
     found_expected_1 = False
     for s in p.scripts:
-        if s == test_dir_path + r"\and_or_in.ind.yaml":
+        if s == test_files_path / "and_or_in.ind.yaml":
             found_expected_1 = True
-        if s == test_dir_path + r"\neq_in.ind.yaml":
+        if s == test_files_path / "neq_in.ind.yaml":
             found_expected_2 = True
     assert found_expected_1 == True
     assert found_expected_2 == True
@@ -249,17 +252,17 @@ def test_and_or_some_in_some_out():
 
 def test_blank_line_eof_error():
     p = resolve_requires.ProcessYaml()
-    test_dir_path = r".\resolverequirestests\files\blank_line_eof_error"
-    p.tags_file = test_dir_path + r"\basic_meets_requires.tags"
-    p.yaml_dir = test_dir_path
+    test_files_path = test_files_base / "blank_line_eof_error"
+    p.tags_file = test_files_path / "basic_meets_requires.tags"
+    p.yaml_dir = test_files_path
     p._getFilesMatchingRequirements()
     assert len(p.scripts) == 1
-    assert test_dir_path + r"\blank_line_eof_error.ind.yaml" == p.scripts[0]
+    assert test_files_path / "blank_line_eof_error.ind.yaml" == p.scripts[0]
 
 def test_this_tag_disables_this_script():
     p = resolve_requires.ProcessYaml()
-    test_dir_path = r".\resolverequirestests\files\this_tag_disables_this_script"
-    p.tags_file = test_dir_path + r"\super_basic.tags"
-    p.yaml_dir = test_dir_path
+    test_files_path = test_files_base / "this_tag_disables_this_script"
+    p.tags_file = test_files_path / "super_basic.tags"
+    p.yaml_dir = test_files_path
     p._getFilesMatchingRequirements()
     assert len(p.scripts) == 0
