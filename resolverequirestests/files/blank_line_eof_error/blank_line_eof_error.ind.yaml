@@ -1,0 +1,33 @@
+
+# The blank line above was triggering an EOF exception in my crappy code
+name: chkp-netobj_objects-clusters.C
+description: parse out information about objects from the database regarding clusters
+type: monitoring
+
+# The blank line above would do the same thing
+monitoring_interval: 10 minutes
+requires:
+    vendor: checkpoint
+    high-availability: "true"
+    role-firewall: "true"
+comments:
+    known-devices:
+        skip-documentation: true
+    cluster-preemption-enabled:
+        why: |
+            When preemption is enabled, if the primary firewall fails, then the secondary firewall will take the active role and start to forward traffic. But, when the primary firewall comes back up, it will immediately resume the active role. If this happens repeatedly in a short period of time, it can have a negative effect on performance. Therefore, best practice is not to use preemption.
+        how: |
+            By parsing "cphaprob state", it is possible to retrieve the preempt setting for the device.
+        without-indeni: |
+            An administrator can view the setting in Check Point SmartDashboard.
+        can-with-snmp: false
+        can-with-syslog: false
+        vendor-provided-management: |
+            An administrator can view the setting in Check Point SmartDashboard.
+steps:
+-   run:
+        type: SSH
+        command: ${nice-path} -n 15 cat $FWDIR/database/netobj_objects.C && grep ":MySICname" $CPDIR/registry/HKLM_registry.data
+    parse:
+        type: AWK
+        file: hw-sw-eos-check.parser.1.awk

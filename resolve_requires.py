@@ -6,14 +6,14 @@ except ImportError:
     from yaml import Loader, Dumper
 
 class ProcessYaml:
-    def __init__(self, tags_file='', ind_dir=''):
+    def __init__(self, tags_file='', yaml_dir=''):
         self.tags_file = tags_file
-        self.ind_dir = ind_dir
+        self.yaml_dir = yaml_dir
         self.requires = None
         self.tags = None
         self.scripts = []
 
-        if self.ind_dir and self.tags_file:
+        if self.yaml_dir and self.tags_file:
             self._getFilesMatchingRequirements()
             for script in self.scripts:
                 print(script)
@@ -22,32 +22,24 @@ class ProcessYaml:
         self._setTags()
         
         # Walk the passed directory to search for .ind files to process
-        for dirpath, dirs, files in os.walk(self.ind_dir):
+        for dirpath, dirs, files in os.walk(self.yaml_dir):
             for filename in files:
-                if filename.endswith('.ind'):
+                if filename.endswith('.yaml'):
                     fname = os.path.join(dirpath,filename)
                     #print('-' * 80)
                     #print(fname)
                     
                     file_str = ""
                     with open(fname) as f:
-                        found_meta = False
                         for line in f:
-                            # Read the file from after #! META to the next #!
-                            if not found_meta:
-                                if re.match(r'^\s*#! META', line):
-                                    found_meta = True
-                            else:
-                                if re.match(r'^\s*#!', line):  # next section -- might not be #! COMMENTS, so we break on anything
-                                    break
-                                # If true or false don't have quotes, the YAML parser converts them to Python True and False.
-                                # Not what we want.
-                                line = re.sub(r':\s*true', r': "true"', line)
-                                line = re.sub(r':\s*false', r': "false"', line)
-                                file_str = file_str + line
+                            # If true or false don't have quotes, the YAML parser converts them to Python True and False.
+                            # Not what we want.
+                            line = re.sub(r':\s*true', r': "true"', line)
+                            line = re.sub(r':\s*false', r': "false"', line)
+                            file_str = file_str + line
 
-                    print(fname)
-                    print("file_str: " + file_str)
+                    #print(fname)
+                    #print("file_str: " + file_str)
                     self.requires = load(file_str, Loader=Loader)
                     #pprint.PrettyPrinter(width=1).pprint(self.requires)
                     #self.requires_str = dump(meta_dict, Dumper=Dumper)
@@ -65,7 +57,7 @@ class ProcessYaml:
         with open(self.tags_file) as tags_f:
             self.tags = eval(tags_f.read())
             #pprint.PrettyPrinter(width=1).pprint(self.tags)
-            print()
+            #print()
             if not self.tags:
                 raise RuntimeError("Passed tags file: " + self.tags_file + " has no data.")
 
@@ -155,7 +147,7 @@ if __name__ == '__main__':
         print("\nUsage:\n\n" + os.path.basename(__file__) + " <required_tags_file> <ind_scripts_dir>")
     else:
         tags_file = sys.argv[1]
-        ind_dir = sys.argv[2]
-        print("\nProcessing: " + tags_file + " against " + ind_dir)
-        processor = ProcessYaml(tags_file, ind_dir)
+        yaml_dir = sys.argv[2]
+        print("\nProcessing: " + tags_file + " against " + yaml_dir)
+        processor = ProcessYaml(tags_file, yaml_dir)
 

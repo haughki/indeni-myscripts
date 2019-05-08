@@ -1,0 +1,22 @@
+name: chkp-cphaprob-a-if-vsx
+description: Check how many interfaces are required to be up, and how many actually are.
+type: monitoring
+monitoring_interval: 1 minute
+requires:
+    vendor: "checkpoint"
+    high-availability: "true"
+    vsx: "true"
+    role-firewall: "true"
+    this_tag_disables_this_script: this_is_intentional
+comments:
+    corexl-cpu-connections:
+        skip-documentation: true
+    corexl-cores-enabled:
+        skip-documentation: true
+steps:
+-   run:
+        type: SSH
+        command: ${nice-path} -n 15 fw vsx stat -l | grep VSID | awk '{print $NF}' | while read id; do vsenv $id && ${nice-path} -n 15 fw vsx stat $id && (${nice-path} -n 15 fw ctl multik stat); done
+    parse:
+        type: AWK
+        file: hw-sw-eos-check.parser.1.awk

@@ -1,45 +1,39 @@
 {
+    "vendor": "checkpoint",
+    "ssh": "true",
+    "os.name": "ipso",
+    "os.version": "R80.20",
+    "linux-based": "true",
+    "role-firewall": "true",
+    "vsx": "true",
     "clusterxl": "true",
     "high-availability": "true",
-    "linux-based": "true",
-    "os.name": "gaia",
-    "os.version": "R80.20",
-    "role-firewall": "true",
-    "routing-bgp": "true",
-    "ssh": "true",
-    "vendor": "checkpoint",
-    "vsx": "true"
+    "routing-bgp": "true"
 }
 
 
-./checkpoint-interrogation.ind
-./clusterid-md5sum-local-sicname.ind
-./cphaconf-cluster_id-get.ind
-./cphaprob-list-vsx.ind
-./cphaprob-state-vsx.ind
-./cplic-print-nomds.ind
-./cplic-print-x-n-p-nomds.ind
-./cpprod_util-FwIsFirewallModule.ind
-./cpstat-fw-vsx.ind
-./cpwd-admin-list-m-vsx.ind
-./debug-status.ind
-./detecting-cluster.ind
-./enabled_blades-vsx.ind
-./fw-ctl-affinity-l-m.ind
-./fw-ctl-pstat-vsx.ind
-./fw-tab-stats-vsx.ind
-./fwaccel-stat-vsx.ind
-./fwmultik_stat-m-vsx.ind
-./hw-sw-eos-check.ind
-./ldap-fingerprint-check.ind
-./log-server-connection-vsx.ind
-./log-server-connection.ind
-./os-monitoring.ind
-./policy-fingerprint-vsx.ind
-./subscription-signatures-updates-vsx.ind
-./tcp-test-18264.ind
-./vpn-check-tunnels-vsx.ind
-./vpn-ipafile-check-vsx.ind
-./vsx-stat-interrogation.ind
-./vsx-stat-l.ind
-./vsx-stat-monitoring.ind
+
+
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\checkpoint-interrogation\checkpoint-interrogation.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\clusterid-md5sum-local-sicname\clusterid-md5sum-local-sicname.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\cphaprob-list-vsx\cphaprob-list-vsx.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\cphaprob-state-vsx\cphaprob-state-vsx.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\cplic-print-nomds\cplic-print-nomds.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\cplic-print-x-n-p-nomds\cplic-print-x-n-p-nomds.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\cpprod_util-FwIsFirewallModule\cpprod_util-FwIsFirewallModule.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\cpstat-fw-vsx\cpstat-fw-vsx.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\cpwd-admin-list-m-vsx\cpwd-admin-list-m-vsx.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\debug-module-options\debug-module-options.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\debug-modules-status\debug-modules-status.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\detecting-cluster\detecting-cluster.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\fw-ctl-pstat-vsx\fw-ctl-pstat-vsx.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\fw-tab-stats-vsx\fw-tab-stats-vsx.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\fwaccel-stat-vsx\fwaccel-stat-vsx.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\hw-sw-eos-check\hw-sw-eos-check.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\ldap-fingerprint-check\ldap-fingerprint-check.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\os-monitoring\os-monitoring.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\tcp-test-18264\tcp-test-18264.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\vpn-ipafile-check-vsx\vpn-ipafile-check-vsx.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\vsx-stat-interrogation\vsx-stat-interrogation.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\vsx-stat-l\vsx-stat-l.ind.yaml
+D:\projects\indeni\indeni-knowledge\parsers\src\checkpoint\firewall\vsx-stat-monitoring\vsx-stat-monitoring.ind.yaml
