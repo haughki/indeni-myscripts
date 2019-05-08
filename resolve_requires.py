@@ -1,3 +1,16 @@
+"""
+- Add a device to Indeni, and then query for the device tags. You can use:
+psql -c "select id, name, ip_address from device;"
+to get the device UUID, and then the API:
+curl -G -k -u "admin:admin123!" https://localhost:9009/api/v1/devices/<Device_UUID>
+to get the tags. E.g.,
+curl -G -k -u "admin:admin123!" https://localhost:9009/api/v1/devices/4f143b97-57a1-43c9-ad87-bac6c4f2c698 | python -m json.tool
+- Copy the tags into a temp file, and then call this script, passing the tags file name and a directory containing
+some IND .yaml files. E.g.,
+python3 resolve_requires.py temp_tags.tags parsers/src/checkpoint/firewall
+- The script will output all IND script names that will run against a device with the passed tags.
+"""
+
 import pprint, sys, re, os, warnings
 from yaml import load, dump
 try:
