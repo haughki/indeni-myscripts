@@ -22,12 +22,14 @@ except ImportError:
 class ProcessYaml:
     def __init__(self, tags_file='', yaml_dir=''):
         self.tags_file = tags_file
-        self.yaml_dir = Path(yaml_dir)
+        self.yaml_dir = yaml_dir
         self.requires = None
         self.tags = None
         self.scripts = []
 
         if self.yaml_dir and self.tags_file:
+            self.tags_file = Path(self.tags_file)
+            self.yaml_dir = Path(self.yaml_dir)
             self._getFilesMatchingRequirements()
             for script in self.scripts:
                 print(script)
@@ -36,7 +38,7 @@ class ProcessYaml:
         self._setTags()
         
         # Walk the passed directory to search for .ind files to process
-        for dirpath, dirs, files in os.walk(self.yaml_dir):
+        for dirpath, dirs, files in os.walk(str(self.yaml_dir)):
             for filename in files:
                 if filename.endswith('.yaml'):
                     fname = Path(dirpath) / filename
@@ -44,7 +46,7 @@ class ProcessYaml:
                     #print(fname)
                     
                     file_str = ""
-                    with open(fname) as f:
+                    with open(str(fname)) as f:
                         for line in f:
                             # If true or false don't have quotes, the YAML parser converts them to Python True and False.
                             # Not what we want.
@@ -67,8 +69,7 @@ class ProcessYaml:
 
 
     def _setTags(self):
-        
-        with open(self.tags_file) as tags_f:
+        with open(str(self.tags_file)) as tags_f:
             self.tags = eval(tags_f.read())
             #pprint.PrettyPrinter(width=1).pprint(self.tags)
             #print()
