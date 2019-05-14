@@ -42,8 +42,8 @@ class ProcessYaml:
             for filename in files:
                 if filename.endswith('.ind.yaml'):
                     fname = Path(dirpath) / filename
-                    print('-' * 80)
-                    print(fname)
+                    #print('-' * 80)
+                    #print(fname)
                     
                     file_str = ""
                     with open(str(fname)) as f:
