@@ -281,6 +281,63 @@ def test_eq_meets_requires():
 
     assert p.meetsRequirements() == True
 
+def test_exists_true_meets_requires():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint',
+        'role-firewall': 'true',
+        'api-key': {'exists': 'true'} },
+        }
+
+    p.tags = {
+        'vendor': 'checkpoint', 
+        'role-firewall': 'true',
+        'api-key': 'some_api_key_value' }
+
+    assert p.meetsRequirements() == True
+
+def test_exists_true_does_not_meet_requires():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint',
+        'role-firewall': 'true',
+        'api-key': {'exists': 'true'} },
+        }
+
+    p.tags = {
+        'vendor': 'checkpoint', 
+        'role-firewall': 'true' }
+
+    assert p.meetsRequirements() == False
+
+def test_exists_false_meets_requires():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint',
+        'role-firewall': 'true',
+        'api-key': {'exists': 'false'} },
+        }
+
+    p.tags = {
+        'vendor': 'checkpoint', 
+        'role-firewall': 'true' }
+
+    assert p.meetsRequirements() == True
+
+def test_exists_false_does_not_meet_requires():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint',
+        'role-firewall': 'true',
+        'api-key': {'exists': 'false'} },
+        }
+
+    p.tags = {
+        'vendor': 'checkpoint', 
+        'role-firewall': 'true',
+        'api-key': 'some_api_key_value' }   # Requires this key should not exist, but it does, so it doesn't meet requirements. Gnaah
+
+    assert p.meetsRequirements() == False
 
 
 # Following tests run against actual .yaml files -- 'full file' tests

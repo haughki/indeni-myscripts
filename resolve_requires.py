@@ -11,8 +11,8 @@ python3 resolve_requires.py temp_tags.tags parsers/src/checkpoint/firewall
 - The script will output all IND script names that will run against a device with the passed tags.
 """
 
-import pprint, sys, re, os, warnings
-from yaml import load, dump
+import pprint, sys, re, os, warnings#, traceback
+from yaml import load, dump, scanner
 from pathlib import Path
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -56,14 +56,20 @@ class ProcessYaml:
 
                     #print(fname)
                     #print("file_str: " + file_str)
-                    self.requires = load(file_str, Loader=Loader)
+                    try:
+                        self.requires = load(file_str, Loader=Loader)
+                    except scanner.ScannerError:
+                        print("INFO: could not load .yaml file: " + str(fname) + ". Maybe YAML is not well-formed.")
+
                     #pprint.PrettyPrinter(width=1).pprint(self.requires)
                     #self.requires_str = dump(meta_dict, Dumper=Dumper)
                     if 'requires' in self.requires:
                             if self.meetsRequirements():
                                 self.scripts.append(fname)
                     else:
-                        warnings.warn('No requires section in this .ind script: ' + str(fname))
+                        print("INFO: " + str(fname) + " looks like an interrogation script which can run against " \
+                              "any device for all vendors. It may or may not be relevant to your device.")
+                        
         
         self.scripts.sort()
 
@@ -136,6 +142,12 @@ class ProcessYaml:
                 elif req_val_key == 'eq':
                     if req_val['eq'] != self.tags[req]:
                         return False  # value of the tag does not equal value of eq -- fails requirements
+                elif req_val_key == 'exists':
+                    req_val_val = req_val['exists']
+                    if req_val_val == 'true' and req not in self.tags:
+                        return False
+                    if req_val_val == 'false' and req in self.tags:
+                        return False
                 else:
                     self._raiseUnexpectedReqType(required, req)
             else:
@@ -151,6 +163,11 @@ class ProcessYaml:
                     return True
                 elif req_val_key == 'eq':  # No tag for this, so implicitly false
                     return False
+                elif req_val_key == 'exists':
+                    if req_val['exists'] == 'true':  # Requires the tag to exist, but it doesn't
+                        return False
+                    if req_val['exists'] == 'false':  # Requires the tag _not_ to exist, and it doesn't
+                        return True
                 else:
                     self._raiseUnexpectedReqType(required, req)
                     
