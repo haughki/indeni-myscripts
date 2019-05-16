@@ -1,4 +1,4 @@
-##resolve_requires.py usage:
+## resolve_requires.py usage:
 
 It's written in Python 3, and it depends on pyyaml, so you need to:
 ```
