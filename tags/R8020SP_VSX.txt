@@ -1,0 +1,23 @@
+{
+    "asg": "true",
+    "chassis": "true",
+    "cluster-id": "2504520fd3f568363f9de3eccf948cae",
+    "device-id": "f070fd06-22f5-4ef5-84ef-68aea02ce2d1",
+    "device-ip": "10.11.94.84",
+    "device-name": "CP-R80.20SP-61K-SGM-1",
+    "high-availability": "true",
+    "hostname": "CP-R80.20SP-61K-SGM-1-ch01-01",
+    "https": "true",
+    "license-vs-ratio": "10",
+    "linux-based": "true",
+    "model": "VMware Virtual Platform",
+    "nice-path": "/bin/nice",
+    "os.name": "gaia",
+    "os.version": "R80.20SP",
+    "role-firewall": "true",
+    "routing-bgp": "true",
+    "ssh": "true",
+    "vendor": "checkpoint",
+    "vs-count": "2",
+    "vsx": "true"
+}

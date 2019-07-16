@@ -1,0 +1,19 @@
+{
+    "device-id": "6b572409-17b5-4199-92eb-a5524157be61",
+    "device-ip": "10.11.94.71",
+    "device-name": "CP-R80.20-MDS2",
+    "hostname": "CP-R80.20-MDS2",
+    "https": "true",
+    "license-vs-ratio": "1",
+    "linux-based": "true",
+    "mds": "true",
+    "model": "VMware Virtual Platform",
+    "nice-path": "/bin/nice",
+    "os.name": "gaia",
+    "os.version": "R80.20",
+    "role-management": "true",
+    "ssh": "true",
+    "vendor": "checkpoint",
+    "vs-count": "2",
+    "vsx": "true"
+}
