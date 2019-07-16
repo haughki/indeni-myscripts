@@ -13,7 +13,7 @@ You will need to `pip3 install pyyaml` and also `pip3 install pytest`. Test case
 
 ### To Run Tests
 ```
-Windows:   D:\projects\indeni\myscripts>py -3 pytest
+Windows:   D:\projects\indeni\myscripts>py -3 -m pytest
 Linux:     Tug:~/projects/indeni/myscripts (master)$ python3 -m pytest
 =========================================== test session starts ======================
 platform linux -- Python 3.5.2, pytest-4.4.1, py-1.8.0, pluggy-0.11.0
