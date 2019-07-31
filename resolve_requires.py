@@ -43,8 +43,8 @@ class ProcessYaml:
             for filename in files:
                 if filename.endswith('.ind.yaml'):
                     fname = Path(dirpath) / filename
-                    print('-' * 80)
-                    print(fname)
+ #                   print('-' * 80)
+ #                   print(fname)
                     
                     file_str = ""
                     with open(str(fname)) as f:
@@ -82,8 +82,8 @@ class ProcessYaml:
         self.scripts.sort()
 
     def scriptRequiresTag(self):
-        print(self.requires)
-        print(self.tags)
+#        print(self.requires)
+#        print(self.tags)
         required = self.requires['requires']
         for find_key,find_val in self.tags.items():
             if self._foundTagInRequired(find_key, find_val, required):
@@ -135,8 +135,8 @@ class ProcessYaml:
 
 
     def meetsRequirements(self):
-        print(self.requires)
-        print(self.tags)
+#        print(self.requires)
+#        print(self.tags)
         required = self.requires['requires']
         for req in required:
             if req == 'or':
@@ -193,12 +193,9 @@ class ProcessYaml:
                 self._raiseUnexpectedReqType(required, req)
         else:  # The reqired key is not in the tags
             req_val = required[req]
-            print("req: " + str(req))
-            print("req_val type: " + str(type(req_val)))
+ #           print("req: " + str(req))
+ #           print("req_val type: " + str(type(req_val)))
             if type(req_val) is dict:  # This would be a 'sub-clause' like 'vsx': {'neq': 'true'}
-                for k,v in req_val.items():
-                    print(k + ": " + v)
-
                 req_val_key = next(iter(req_val))  # get the first (and should be only) key in the dict
                 # Example: vsx is required to not be true. The vsx key doesn't even exist in the tags:
                 # maybe it's just a regular firewall. In any case, if the vsx key doesn't exist,
