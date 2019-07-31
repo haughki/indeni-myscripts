@@ -1,6 +1,82 @@
 import resolve_requires, pytest
 from pathlib import Path
 
+
+
+def test_search_basic_tag_search():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint', 
+        'os.name': 'gaia',
+        'role-firewall': 'true'
+        }}
+    p.tags = { 'vendor': 'checkpoint', 
+               'os.name': 'gaia' }
+
+    assert p.scriptRequiresTag() == True
+
+def test_search_basic_tag_search_not_found():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'cisco', 
+        'role-firewall': 'true'
+        }}
+    p.tags = { 'vendor': 'checkpoint', 
+               'os.name': 'gaia' }
+
+    assert p.scriptRequiresTag() == False
+
+def test_search_sub_list_found():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint',
+        'or': [{'os.name': 'gaia'},
+            {'os.name': 'ipso'},
+            {'role-firewall': 'true'}] }}
+    p.tags = { 'mds': 'true',
+               'os.name': 'gaia' }
+
+    assert p.scriptRequiresTag() == True
+
+def test_search_sub_list_not_found():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint',
+        'or': [{'os.name': 'gaia'},
+            {'os.name': 'ipso'},
+            {'role-firewall': 'true'}] }}
+    p.tags = { 'mds': 'true',
+               'os.name': 'splat' }
+
+    assert p.scriptRequiresTag() == False
+
+def test_search_sub_dict_found():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint',
+        'role-firewall': 'true',
+        'key_with': {'sub': 'dict'} },
+        }
+    p.tags = { 'vendor': 'dummy', 
+            'sub': 'dict',
+            'role-firewall': 'false' }
+
+    assert p.scriptRequiresTag() == True
+
+def test_search_sub_dict_not_found():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint',
+        'role-firewall': 'true',
+        'key_with': {'sub': 'dict'} },
+        }
+    p.tags = { 'vendor': 'dummy', 
+            'sub': 'foo-bar',
+            'role-firewall': 'false' }
+
+    assert p.scriptRequiresTag() == False
+
+
 def test_basic_meets_requires():
     p = resolve_requires.ProcessYaml()
     p.requires = {'requires': {

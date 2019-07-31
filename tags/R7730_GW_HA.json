@@ -1,0 +1,19 @@
+{
+    "cluster-id": "e534663ba07083a25ff476f44ef7d7f0",
+    "clusterxl": "true",
+    "device-id": "481f14ba-6726-45ab-9b2c-f7a81005d6e1",
+    "device-ip": "10.11.94.10",
+    "device-name": "CP-R77.30-GW6-1",
+    "high-availability": "true",
+    "hostname": "CP-R77.30-GW6-1",
+    "https": "true",
+    "linux-based": "true",
+    "model": "VMware Virtual Platform",
+    "nice-path": "/bin/nice",
+    "os.name": "gaia",
+    "os.version": "R77.30",
+    "role-firewall": "true",
+    "routing-bgp": "true",
+    "ssh": "true",
+    "vendor": "checkpoint"
+}

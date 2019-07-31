@@ -20,9 +20,10 @@ except ImportError:
     from yaml import Loader, Dumper
 
 class ProcessYaml:
-    def __init__(self, tags_file='', yaml_dir=''):
+    def __init__(self, tags_file='', yaml_dir='', search=False):
         self.tags_file = tags_file
         self.yaml_dir = yaml_dir
+        self.search = search
         self.requires = None
         self.tags = None
         self.scripts = []
@@ -42,8 +43,8 @@ class ProcessYaml:
             for filename in files:
                 if filename.endswith('.ind.yaml'):
                     fname = Path(dirpath) / filename
-                    #print('-' * 80)
-                    #print(fname)
+                    print('-' * 80)
+                    print(fname)
                     
                     file_str = ""
                     with open(str(fname)) as f:
@@ -59,20 +60,58 @@ class ProcessYaml:
                     try:
                         self.requires = load(file_str, Loader=Loader)
                     except scanner.ScannerError:
-                        print("INFO: could not load .yaml file: " + str(fname) + ". Maybe YAML is not well-formed.")
+                        print("WARNING: could not load .yaml file: " + str(fname) + ". Maybe YAML is not well-formed.")
 
                     #pprint.PrettyPrinter(width=1).pprint(self.requires)
                     #self.requires_str = dump(meta_dict, Dumper=Dumper)
-                    if 'requires' in self.requires:
-                            if self.meetsRequirements():
-                                self.scripts.append(fname)
+                    if self.search:
+                        if 'requires' in self.requires:
+                                if self.scriptRequiresTag():
+                                    self.scripts.append(fname)
+                        else:
+                            print("INTERROGATION: " + str(fname))
                     else:
-                        print("INFO: " + str(fname) + " looks like an interrogation script which can run against " \
-                              "any device for all vendors. It may or may not be relevant to your device.")
+                        if 'requires' in self.requires:
+                                if self.meetsRequirements():
+                                    self.scripts.append(fname)
+                        else:
+                            print("INFO: " + str(fname) + " looks like an interrogation script which can run against " \
+                                    "any device for all vendors. It may or may not be relevant to your device.")
                         
         
         self.scripts.sort()
 
+    def scriptRequiresTag(self):
+        print(self.requires)
+        print(self.tags)
+        required = self.requires['requires']
+        for find_key,find_val in self.tags.items():
+            if self._foundTagInRequired(find_key, find_val, required):
+                return True
+        return False
+
+
+    def _foundTagInRequired(self, find_key, find_val, required):
+        if type(required) is not dict:
+            raise RuntimeError("Search: required search type should always be dict, but is: " + str(type(required)))
+        for req in required:
+            req_val = required[req]
+            if type(req_val) is str: 
+                if req == find_key and req_val == find_val:
+                    return True
+            elif type(req_val) is dict:
+                if self._foundTagInRequired(find_key, find_val, req_val):
+                    return True
+            elif type(req_val) is list:
+                for list_req in req_val:
+                    if type(list_req) is dict:
+                        if self._foundTagInRequired(find_key, find_val, list_req):
+                            return True
+                    else:
+                        raise RuntimeError("Search: required list item type should always be dict, but is: " + str(type(list_req)))
+            else:
+                raise RuntimeError("Search: unexpected required value type: " + str(type(req_val)))
+        return False # no match in this dict
 
     def _setTags(self):
         with open(str(self.tags_file)) as tags_f:
@@ -96,8 +135,8 @@ class ProcessYaml:
 
 
     def meetsRequirements(self):
-        #print(self.requires)
-        #print(self.tags)
+        print(self.requires)
+        print(self.tags)
         required = self.requires['requires']
         for req in required:
             if req == 'or':
@@ -154,7 +193,12 @@ class ProcessYaml:
                 self._raiseUnexpectedReqType(required, req)
         else:  # The reqired key is not in the tags
             req_val = required[req]
+            print("req: " + str(req))
+            print("req_val type: " + str(type(req_val)))
             if type(req_val) is dict:  # This would be a 'sub-clause' like 'vsx': {'neq': 'true'}
+                for k,v in req_val.items():
+                    print(k + ": " + v)
+
                 req_val_key = next(iter(req_val))  # get the first (and should be only) key in the dict
                 # Example: vsx is required to not be true. The vsx key doesn't even exist in the tags:
                 # maybe it's just a regular firewall. In any case, if the vsx key doesn't exist,
@@ -168,6 +212,7 @@ class ProcessYaml:
                         return False
                     if req_val['exists'] == 'false':  # Requires the tag _not_ to exist, and it doesn't
                         return True
+                
                 else:
                     self._raiseUnexpectedReqType(required, req)
                     
@@ -175,13 +220,23 @@ class ProcessYaml:
             return False
         return True # Couldn't say for sure if all the requirements are met -- need to look at the rest of the requirements
 
+def printUsage():
+    print("\nUsage:\n\n" + os.path.basename(__file__) + " [-s|--search] <required_tags_file> <ind_scripts_dir>")
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print("\nUsage:\n\n" + os.path.basename(__file__) + " <required_tags_file> <ind_scripts_dir>")
-    else:
+        printUsage()
+    elif len(sys.argv) == 3:
         tags_file = sys.argv[1]
         yaml_dir = sys.argv[2]
         print("\nProcessing: " + tags_file + " against " + yaml_dir)
         processor = ProcessYaml(tags_file, yaml_dir)
-
+    elif (len(sys.argv) == 4):
+        option = sys.argv[1]
+        if (option == "-s") or (option == "--search"):
+            tags_file = sys.argv[2]
+            yaml_dir = sys.argv[3]
+            print("\nSearching for: " + tags_file + " in " + yaml_dir)
+            processor = ProcessYaml(tags_file, yaml_dir, True)
+    else:
+        printUsage()
