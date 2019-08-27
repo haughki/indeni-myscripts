@@ -1,7 +1,34 @@
 import resolve_requires, pytest
 from pathlib import Path
 
+def test_list_basic():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint', 
+        'os.name': 'gaia',
+        }}
+    p.buildTagsSet()
+    assert p.tags_set == {'"os.name": "gaia"', '"vendor": "checkpoint"'}
 
+def test_list_sub_list():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint',
+        'or': [{'os.name': 'gaia'},
+            {'os.name': 'ipso'}] }}
+
+    p.buildTagsSet()
+    assert p.tags_set == {'"os.name": "gaia"', '"os.name": "ipso"', '"vendor": "checkpoint"'}
+
+def test_list_sub_dict():
+    p = resolve_requires.ProcessYaml()
+    p.requires = {'requires': {
+        'vendor': 'checkpoint',
+        'key_with': {'sub': 'dict'} },
+        }
+
+    p.buildTagsSet()
+    assert p.tags_set == {'"sub": "dict"', '"vendor": "checkpoint"'}
 
 def test_search_basic_tag_search():
     p = resolve_requires.ProcessYaml()

@@ -1,0 +1,16 @@
+{
+    "clusterxl": "true",
+    "high-availability": "true",
+    "limited_availability_script": "remove_this_line_to_enable_for_specific_customer",
+    "linux-based": "true",
+    "mds": "true",
+    "mlm": "true",
+    "os.name": "gaia",
+    "os.version": "R80.20",
+    "role-firewall": "true",
+    "role-management": "true",
+    "routing-bgp": "true",
+    "vendor": "checkpoint",
+    "vrrp": "true",
+    "vsx": "true"
+}

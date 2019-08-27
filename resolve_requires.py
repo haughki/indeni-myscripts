@@ -1,3 +1,5 @@
+#! /usr/bin/python3
+
 """
 - Add a device to Indeni, and then query for the device tags. You can use:
 psql -c "select id, name, ip_address from device;"
@@ -20,23 +22,41 @@ except ImportError:
     from yaml import Loader, Dumper
 
 class ProcessYaml:
-    def __init__(self, tags_file='', yaml_dir='', search=False):
+    def __init__(self, tags_file='', yaml_dir='', option=''):
         self.tags_file = tags_file
         self.yaml_dir = yaml_dir
-        self.search = search
+        self.search = False
+        if (option == "-s") or (option == "--search"):
+            self.search = True
+        self.list_tags = False
+        if (tags_file == '') and (yaml_dir != ''):  # if we only have a directory, we are implicitly doing a tags list
+            self.list_tags = True
+
+        self.tags_set = set()
         self.requires = None
         self.tags = None
         self.scripts = []
 
-        if self.yaml_dir and self.tags_file:
-            self.tags_file = Path(self.tags_file)
+        if self.yaml_dir:
+            if self.tags_file:
+                self.tags_file = Path(self.tags_file)
             self.yaml_dir = Path(self.yaml_dir)
             self._getFilesMatchingRequirements()
             for script in self.scripts:
                 print(script)
+            
+            if self.list_tags:
+                tags_list = list(self.tags_set)
+                tags_list.sort()
+                print("{")
+                print("    ", end='')
+                print(',\n    '.join(tags_list))
+                print("}")
+
 
     def _getFilesMatchingRequirements(self):
-        self._setTags()
+        if self.tags_file:
+            self._setTags()
         
         # Walk the passed directory to search for .ind files to process
         for dirpath, dirs, files in os.walk(str(self.yaml_dir)):
@@ -64,23 +84,48 @@ class ProcessYaml:
 
                     #pprint.PrettyPrinter(width=1).pprint(self.requires)
                     #self.requires_str = dump(meta_dict, Dumper=Dumper)
-                    if self.search:
-                        if 'requires' in self.requires:
-                                if self.scriptRequiresTag():
-                                    self.scripts.append(fname)
+                    if 'requires' in self.requires:
+                        #pprint.PrettyPrinter(width=1).pprint(self.requires['requires'])
+                        if self.search:
+                            if self.scriptRequiresTag():
+                                self.scripts.append(fname)
+                        elif self.list_tags:
+                            self.buildTagsSet()
                         else:
-                            print("INTERROGATION: " + str(fname))
+                            if self.meetsRequirements():
+                                self.scripts.append(fname)                            
                     else:
-                        if 'requires' in self.requires:
-                                if self.meetsRequirements():
-                                    self.scripts.append(fname)
-                        else:
-                            print("INFO: " + str(fname) + " looks like an interrogation script which can run against " \
-                                    "any device for all vendors. It may or may not be relevant to your device.")
-                        
+                        print("INFO: Interrogation Script: " + str(fname))                        
         
         self.scripts.sort()
 
+
+    def buildTagsSet(self):
+#        print(self.requires)
+#        print(self.tags)
+        self._buildTagsSet(self.requires['requires'])
+
+    def _buildTagsSet(self, required):
+        if type(required) is not dict:
+            raise RuntimeError("List: required list type should always be dict, but is: " + str(type(required)))
+        for req,req_val in required.items():
+            if type(req_val) is str:
+                self.tags_set.add('\"' + req + '\": \"' + req_val + '\"')
+                #print('\"' + req + '\": \"' + req_val + '\"')
+            elif type(req_val) is dict:
+                self._buildTagsSet(req_val)
+            elif type(req_val) is list:
+                for list_req in req_val:
+                    if type(list_req) is dict:
+                        self._buildTagsSet(list_req)
+                    else:
+                        raise RuntimeError("List: required list item type should always be dict, but is: " + str(type(list_req)))
+            else:
+                raise RuntimeError("List: unexpected required value type: " + str(type(req_val)))
+
+    """
+    For each script, if the script requires section contains any of the tags in the past tags file, return true.
+    """
     def scriptRequiresTag(self):
 #        print(self.requires)
 #        print(self.tags)
@@ -218,11 +263,24 @@ class ProcessYaml:
         return True # Couldn't say for sure if all the requirements are met -- need to look at the rest of the requirements
 
 def printUsage():
-    print("\nUsage:\n\n" + os.path.basename(__file__) + " [-s|--search] <required_tags_file> <ind_scripts_dir>")
+    print("\nUsage:\n\n" + os.path.basename(__file__) + " [-s|--search] [required_tags_file] <ind_scripts_dir>")
+    print("\n\n" + os.path.basename(__file__) + " mytags.json /home/hawk/projects/indeni/indeni-knowledge/parsers/src/checkpoint/management")
+    print("\n" + "    For each .ind.yaml in the passed scripts dir, if the meet the tags listed in mytags.json, list that script.")
+    print("\n\n" + os.path.basename(__file__) + " /home/hawk/projects/indeni/indeni-knowledge/parsers/src/checkpoint/management")
+    print("\n" + "    Find all of the unique tags in all of the required sections of all the .ind.yaml files in the passed directory.")
+    print("\n\n-s")
+    print("    " + os.path.basename(__file__) + " -s mytags.json /home/hawk/projects/indeni/indeni-knowledge/parsers/src/checkpoint/management")
+    print("\n" + "        For each .ind.yaml in the passed scripts dir, if the requires section contains _any_ of the tags listed in mytags.json, list that script.")
+
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
         printUsage()
+    elif len(sys.argv) == 2:
+        yaml_dir = sys.argv[1]
+        print("\nListing tags for: " + yaml_dir)
+        processor = ProcessYaml('', yaml_dir)
+
     elif len(sys.argv) == 3:
         tags_file = sys.argv[1]
         yaml_dir = sys.argv[2]
@@ -230,10 +288,9 @@ if __name__ == '__main__':
         processor = ProcessYaml(tags_file, yaml_dir)
     elif (len(sys.argv) == 4):
         option = sys.argv[1]
-        if (option == "-s") or (option == "--search"):
-            tags_file = sys.argv[2]
-            yaml_dir = sys.argv[3]
-            print("\nSearching for: " + tags_file + " in " + yaml_dir)
-            processor = ProcessYaml(tags_file, yaml_dir, True)
+        tags_file = sys.argv[2]
+        yaml_dir = sys.argv[3]
+        print("\nSearching for " + tags_file + " in " + yaml_dir)
+        processor = ProcessYaml(tags_file, yaml_dir, option)
     else:
         printUsage()
