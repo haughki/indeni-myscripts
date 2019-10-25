@@ -8,10 +8,21 @@
 # update-all-baselines
 # /indeni-knowledge/parsers/test/crossvendor/unix/top-b $ update-all-baselines
 
-
+# gives: /mnt/d/projects/indeni/indeni-knowledge/parsers/src/checkpoint/firewall/log-server-connection-vsx
 script="$(pwd | sed -r 's/\/parsers\/test/\/parsers\/src/')"
-script="${script}/$(basename ${script})"
-script="${script}.ind.yaml"
+
+# gives: log-server-connection-vsx
+bname="$(basename ${script})"
+
+if [[ $1 == "py" ]]; then
+    # Replace "-" with "_"
+    # Inline search/replace: ${parameter/pattern/string} -- https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Shell-Parameter-Expansion
+    # gives: /mnt/d/projects/indeni/indeni-knowledge/parsers/src/checkpoint/firewall/log-server-connection-vsx/log_server_connection_vsx.ind.yaml
+    script="${script}/${bname//-/_}.ind.yaml"
+else
+    # gives: /mnt/d/projects/indeni/indeni-knowledge/parsers/src/checkpoint/firewall/log-server-connection-vsx/log-server-connection-vsx.ind.yaml
+    script="${script}/${bname}.ind.yaml"
+fi
 
 
 for test_name in */ ; do
